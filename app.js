@@ -1,6 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const PROPERTY_TYPES = ["casa", "apartamento", "kitnet", "terreno", "loja"];
+const BUSINESS_TYPES = ["venda", "aluguel"];
 const WHATSAPP_AGENTS = [
   { name: "Amanda", phone: "5521995522414" },
   { name: "João", phone: "5521970677276" },
@@ -38,6 +39,7 @@ const elements = {
   minPrice: document.querySelector("#min-price"),
   maxPrice: document.querySelector("#max-price"),
   typeFilters: document.querySelector("#type-filters"),
+  businessTypeFilters: document.querySelector("#business-type-filters"),
   neighborhoodFilters: document.querySelector("#neighborhood-filters"),
   bedroomFilters: document.querySelector("#bedroom-filters"),
   clearFiltersButton: document.querySelector("#clear-filters"),
@@ -56,6 +58,7 @@ const elements = {
   neighborhoodInput: document.querySelector("#property-neighborhood"),
   locationInput: document.querySelector("#property-location"),
   typeInput: document.querySelector("#property-type"),
+  businessTypeInput: document.querySelector("#property-business-type"),
   whatsappInput: document.querySelector("#property-whatsapp"),
   imageInput: document.querySelector("#image-input"),
   imagePreview: document.querySelector("#image-preview"),
@@ -75,6 +78,7 @@ const state = {
     minPrice: null,
     maxPrice: null,
     types: new Set(),
+    businessTypes: new Set(),
     neighborhoods: new Set(),
     bedrooms: new Set(),
   },
@@ -88,6 +92,7 @@ init().catch((error) => {
 
 async function init() {
   renderTypeFilters();
+  renderBusinessTypeFilters();
   bindEvents();
 
   if (!HAS_SUPABASE_CONFIG) {
@@ -119,6 +124,7 @@ function bindEvents() {
   elements.minPrice.addEventListener("input", handleFilterChange);
   elements.maxPrice.addEventListener("input", handleFilterChange);
   elements.typeFilters.addEventListener("change", handleFilterChange);
+  elements.businessTypeFilters.addEventListener("change", handleFilterChange);
   elements.neighborhoodFilters.addEventListener("change", handleFilterChange);
   elements.bedroomFilters.addEventListener("change", handleFilterChange);
   elements.clearFiltersButton.addEventListener("click", clearFilters);
@@ -141,6 +147,18 @@ function renderTypeFilters() {
       <label class="checkbox-item">
         <input type="checkbox" value="${type}" data-filter-group="types">
         <span>${capitalize(type)}</span>
+      </label>
+    `;
+  }).join("");
+}
+
+function renderBusinessTypeFilters() {
+  elements.businessTypeFilters.innerHTML = BUSINESS_TYPES.map((businessType) => {
+    const checked = state.filters.businessTypes.has(businessType) ? "checked" : "";
+    return `
+      <label class="checkbox-item">
+        <input type="checkbox" value="${businessType}" data-filter-group="businessTypes" ${checked}>
+        <span>${capitalize(businessType)}</span>
       </label>
     `;
   }).join("");
@@ -212,6 +230,7 @@ function syncFilterStateFromUi() {
   state.filters.minPrice = parseOptionalNumber(elements.minPrice.value);
   state.filters.maxPrice = parseOptionalNumber(elements.maxPrice.value);
   state.filters.types = getCheckedValuesAsSet(elements.typeFilters);
+  state.filters.businessTypes = getCheckedValuesAsSet(elements.businessTypeFilters);
   state.filters.neighborhoods = getCheckedValuesAsSet(elements.neighborhoodFilters);
   state.filters.bedrooms = getCheckedValuesAsSet(elements.bedroomFilters);
 }
@@ -228,6 +247,7 @@ function clearFilters() {
     minPrice: null,
     maxPrice: null,
     types: new Set(),
+    businessTypes: new Set(),
     neighborhoods: new Set(),
     bedrooms: new Set(),
   };
@@ -236,12 +256,13 @@ function clearFilters() {
 }
 
 function applyFilters() {
-  const { minPrice, maxPrice, types, neighborhoods, bedrooms } = state.filters;
+  const { minPrice, maxPrice, types, businessTypes, neighborhoods, bedrooms } = state.filters;
 
   const filtered = state.properties.filter((property) => {
     if (minPrice !== null && property.price < minPrice) return false;
     if (maxPrice !== null && property.price > maxPrice) return false;
     if (types.size > 0 && !types.has(property.type)) return false;
+    if (businessTypes.size > 0 && !businessTypes.has(property.business_type)) return false;
     if (neighborhoods.size > 0 && !neighborhoods.has(property.neighborhood)) return false;
     if (bedrooms.size > 0 && !bedrooms.has(String(property.bedrooms))) return false;
     return true;
@@ -343,6 +364,7 @@ function renderCatalog(properties) {
     const tags = node.querySelector(".property-tags");
     tags.innerHTML = `
       <span class="tag">${capitalize(property.type)}</span>
+      <span class="tag">${formatBusinessType(property.business_type)}</span>
       <span class="tag">${property.bedrooms} quarto(s)</span>
     `;
 
@@ -477,7 +499,7 @@ function renderAdminList(properties) {
     item.dataset.id = property.id;
     item.querySelector(".admin-item-title").textContent = property.title;
     item.querySelector(".admin-item-meta").textContent =
-      `${capitalize(property.type)} | ${property.bedrooms} quarto(s) | ${formatCurrency(property.price)}`;
+      `${capitalize(property.type)} | ${formatBusinessType(property.business_type)} | ${property.bedrooms} quarto(s) | ${formatCurrency(property.price)}`;
     elements.adminList.appendChild(node);
   });
 }
@@ -517,6 +539,7 @@ function startEditingProperty(propertyId) {
   elements.neighborhoodInput.value = property.neighborhood;
   elements.locationInput.value = property.location;
   elements.typeInput.value = property.type;
+  elements.businessTypeInput.value = property.business_type || BUSINESS_TYPES[0];
   elements.whatsappInput.value = property.whatsapp;
 
   cleanupStagedImages();
@@ -631,6 +654,7 @@ async function handlePropertySubmit(event) {
       neighborhood: payload.neighborhood,
       location: payload.location,
       type: payload.type,
+      business_type: payload.businessType,
       bedrooms: payload.bedrooms,
       whatsapp: payload.whatsapp,
       image_paths: allPaths,
@@ -686,19 +710,25 @@ function collectPropertyFormData() {
   const neighborhood = elements.neighborhoodInput.value.trim();
   const location = elements.locationInput.value.trim();
   const type = elements.typeInput.value.trim().toLowerCase();
+  const businessType = elements.businessTypeInput.value.trim().toLowerCase();
   const whatsapp = elements.whatsappInput.value.trim();
   const rawPrice = elements.priceInput.value;
   const rawBedrooms = elements.bedroomsInput.value;
   const price = Number(rawPrice);
   const bedrooms = Number(rawBedrooms);
 
-  if (!title || !description || !neighborhood || !location || !type || !whatsapp) {
+  if (!title || !description || !neighborhood || !location || !type || !businessType) {
     showStatus(elements.adminStatus, "Preencha todos os campos obrigatorios.", "warning");
     return null;
   }
 
   if (!PROPERTY_TYPES.includes(type)) {
     showStatus(elements.adminStatus, "Tipo de imovel invalido.", "warning");
+    return null;
+  }
+
+  if (!BUSINESS_TYPES.includes(businessType)) {
+    showStatus(elements.adminStatus, "Tipo de negocio invalido.", "warning");
     return null;
   }
 
@@ -718,6 +748,7 @@ function collectPropertyFormData() {
     neighborhood,
     location,
     type,
+    businessType,
     whatsapp,
     price,
     bedrooms,
@@ -940,6 +971,7 @@ function normalizeProperty(row) {
     neighborhood: row.neighborhood || "",
     location: row.location || "",
     type: String(row.type || "").toLowerCase(),
+    business_type: String(row.business_type || "").toLowerCase(),
     bedrooms: Number(row.bedrooms) || 0,
     whatsapp: row.whatsapp || "",
     image_paths: imagePaths,
@@ -1051,6 +1083,12 @@ function formatCurrency(value) {
 function capitalize(value) {
   if (!value) return "";
   return value[0].toUpperCase() + value.slice(1);
+}
+
+function formatBusinessType(value) {
+  if (value === "venda") return "Venda";
+  if (value === "aluguel") return "Aluguel";
+  return "Nao informado";
 }
 
 function escapeHtml(value) {
