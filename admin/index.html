@@ -64,6 +64,11 @@
       </div>
 
       <div class="filter-block">
+        <p>Tipo de negocio</p>
+        <div id="business-type-filters" class="checkbox-group"></div>
+      </div>
+
+      <div class="filter-block">
         <p>Bairro</p>
         <div id="neighborhood-filters" class="checkbox-group">
           <span class="muted">Sem bairros cadastrados.</span>
@@ -169,10 +174,18 @@
             </label>
 
             <label class="field">
-              <span>WhatsApp de contato</span>
-              <input id="property-whatsapp" type="text" required placeholder="55DDDNUMERO">
+              <span>Tipo de negocio</span>
+              <select id="property-business-type" required>
+                <option value="venda">Venda</option>
+                <option value="aluguel">Aluguel</option>
+              </select>
             </label>
           </div>
+
+          <label class="field">
+            <span>WhatsApp de contato (opcional)</span>
+            <input id="property-whatsapp" type="text" placeholder="55DDDNUMERO">
+          </label>
 
           <label class="field">
             <span>Fotos do imovel</span>
