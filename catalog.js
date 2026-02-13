@@ -1,6 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const PROPERTY_TYPES = ["casa", "apartamento", "kitnet", "terreno", "loja"];
+const BUSINESS_TYPES = ["venda", "aluguel"];
 const WHATSAPP_AGENTS = [
   { name: "Amanda", phone: "5521995522414" },
   { name: "João", phone: "5521970677276" },
@@ -34,6 +35,7 @@ const elements = {
   minPrice: document.querySelector("#min-price"),
   maxPrice: document.querySelector("#max-price"),
   typeFilters: document.querySelector("#type-filters"),
+  businessTypeFilters: document.querySelector("#business-type-filters"),
   neighborhoodFilters: document.querySelector("#neighborhood-filters"),
   bedroomFilters: document.querySelector("#bedroom-filters"),
   clearFiltersButton: document.querySelector("#clear-filters"),
@@ -48,6 +50,7 @@ const state = {
     minPrice: null,
     maxPrice: null,
     types: new Set(),
+    businessTypes: new Set(),
     neighborhoods: new Set(),
     bedrooms: new Set(),
   },
@@ -61,6 +64,7 @@ init().catch((error) => {
 
 async function init() {
   renderTypeFilters();
+  renderBusinessTypeFilters();
   bindEvents();
 
   if (!HAS_SUPABASE_CONFIG) {
@@ -82,6 +86,7 @@ function bindEvents() {
   elements.minPrice.addEventListener("input", handleFilterChange);
   elements.maxPrice.addEventListener("input", handleFilterChange);
   elements.typeFilters.addEventListener("change", handleFilterChange);
+  elements.businessTypeFilters.addEventListener("change", handleFilterChange);
   elements.neighborhoodFilters.addEventListener("change", handleFilterChange);
   elements.bedroomFilters.addEventListener("change", handleFilterChange);
   elements.clearFiltersButton.addEventListener("click", clearFilters);
@@ -101,6 +106,18 @@ function renderTypeFilters() {
       <label class="checkbox-item">
         <input type="checkbox" value="${type}" data-filter-group="types">
         <span>${capitalize(type)}</span>
+      </label>
+    `;
+  }).join("");
+}
+
+function renderBusinessTypeFilters() {
+  elements.businessTypeFilters.innerHTML = BUSINESS_TYPES.map((businessType) => {
+    const checked = state.filters.businessTypes.has(businessType) ? "checked" : "";
+    return `
+      <label class="checkbox-item">
+        <input type="checkbox" value="${businessType}" data-filter-group="businessTypes" ${checked}>
+        <span>${capitalize(businessType)}</span>
       </label>
     `;
   }).join("");
@@ -188,6 +205,7 @@ function syncFilterStateFromUi() {
   state.filters.minPrice = parseOptionalNumber(elements.minPrice.value);
   state.filters.maxPrice = parseOptionalNumber(elements.maxPrice.value);
   state.filters.types = getCheckedValuesAsSet(elements.typeFilters);
+  state.filters.businessTypes = getCheckedValuesAsSet(elements.businessTypeFilters);
   state.filters.neighborhoods = getCheckedValuesAsSet(elements.neighborhoodFilters);
   state.filters.bedrooms = getCheckedValuesAsSet(elements.bedroomFilters);
 }
@@ -204,6 +222,7 @@ function clearFilters() {
     minPrice: null,
     maxPrice: null,
     types: new Set(),
+    businessTypes: new Set(),
     neighborhoods: new Set(),
     bedrooms: new Set(),
   };
@@ -212,12 +231,13 @@ function clearFilters() {
 }
 
 function applyFilters() {
-  const { minPrice, maxPrice, types, neighborhoods, bedrooms } = state.filters;
+  const { minPrice, maxPrice, types, businessTypes, neighborhoods, bedrooms } = state.filters;
 
   const filtered = state.properties.filter((property) => {
     if (minPrice !== null && property.price < minPrice) return false;
     if (maxPrice !== null && property.price > maxPrice) return false;
     if (types.size > 0 && !types.has(property.type)) return false;
+    if (businessTypes.size > 0 && !businessTypes.has(property.business_type)) return false;
     if (neighborhoods.size > 0 && !neighborhoods.has(property.neighborhood)) return false;
     if (bedrooms.size > 0 && !bedrooms.has(String(property.bedrooms))) return false;
     return true;
@@ -319,6 +339,7 @@ function renderCatalog(properties) {
     const tags = node.querySelector(".property-tags");
     tags.innerHTML = `
       <span class="tag">${capitalize(property.type)}</span>
+      <span class="tag">${formatBusinessType(property.business_type)}</span>
       <span class="tag">${property.bedrooms} quarto(s)</span>
     `;
 
@@ -354,6 +375,7 @@ function normalizeProperty(row) {
     neighborhood: row.neighborhood || "",
     location: row.location || "",
     type: String(row.type || "").toLowerCase(),
+    business_type: String(row.business_type || "").toLowerCase(),
     bedrooms: Number(row.bedrooms) || 0,
     whatsapp: row.whatsapp || "",
     image_paths: imagePaths,
@@ -453,6 +475,12 @@ function formatCurrency(value) {
 function capitalize(value) {
   if (!value) return "";
   return value[0].toUpperCase() + value.slice(1);
+}
+
+function formatBusinessType(value) {
+  if (value === "venda") return "Venda";
+  if (value === "aluguel") return "Aluguel";
+  return "Nao informado";
 }
 
 function escapeHtml(value) {
