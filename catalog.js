@@ -9,7 +9,6 @@ const WHATSAPP_AGENTS = [
 const SUPABASE_URL = window.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
 const STORAGE_BUCKET = window.SUPABASE_STORAGE_BUCKET || "property-images";
-const MOBILE_FILTER_BREAKPOINT = 920;
 
 const HAS_SUPABASE_CONFIG =
   Boolean(SUPABASE_URL && SUPABASE_ANON_KEY) &&
@@ -40,8 +39,6 @@ const elements = {
   clearFiltersButton: document.querySelector("#clear-filters"),
   filtersPanel: document.querySelector("#filters-panel"),
   mobileFiltersToggle: document.querySelector("#mobile-filters-toggle"),
-  mobileFiltersClose: document.querySelector("#mobile-filters-close"),
-  mobileFiltersBackdrop: document.querySelector("#mobile-filters-backdrop"),
 };
 
 const state = {
@@ -88,80 +85,14 @@ function bindEvents() {
   elements.neighborhoodFilters.addEventListener("change", handleFilterChange);
   elements.bedroomFilters.addEventListener("change", handleFilterChange);
   elements.clearFiltersButton.addEventListener("click", clearFilters);
-  bindMobileFilterEvents();
-}
 
-function bindMobileFilterEvents() {
-  if (!elements.mobileFiltersToggle || !elements.filtersPanel || !elements.mobileFiltersBackdrop) {
-    return;
-  }
-
-  elements.mobileFiltersToggle.addEventListener("click", toggleMobileFilters);
-  elements.mobileFiltersBackdrop.addEventListener("click", closeMobileFilters);
-
-  if (elements.mobileFiltersClose) {
-    elements.mobileFiltersClose.addEventListener("click", closeMobileFilters);
-  }
-
-  window.addEventListener("resize", syncMobileFilterState);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeMobileFilters();
-    }
-  });
-
-  syncMobileFilterState();
-}
-
-function toggleMobileFilters() {
-  if (document.body.classList.contains("filters-mobile-open")) {
-    closeMobileFilters();
-    return;
-  }
-
-  openMobileFilters();
-}
-
-function openMobileFilters() {
-  if (!isMobileViewport()) return;
-
-  document.body.classList.add("filters-mobile-open");
-  elements.mobileFiltersToggle.setAttribute("aria-expanded", "true");
-  elements.mobileFiltersBackdrop.classList.remove("hidden");
-  elements.filtersPanel.setAttribute("aria-hidden", "false");
-}
-
-function closeMobileFilters() {
-  document.body.classList.remove("filters-mobile-open");
-
-  if (elements.mobileFiltersToggle) {
-    elements.mobileFiltersToggle.setAttribute("aria-expanded", "false");
-  }
-
-  if (elements.mobileFiltersBackdrop) {
-    elements.mobileFiltersBackdrop.classList.add("hidden");
-  }
-
-  if (elements.filtersPanel) {
-    elements.filtersPanel.setAttribute("aria-hidden", isMobileViewport() ? "true" : "false");
+  if (elements.mobileFiltersToggle && elements.filtersPanel) {
+    elements.mobileFiltersToggle.addEventListener("click", scrollToFiltersPanel);
   }
 }
 
-function syncMobileFilterState() {
-  if (isMobileViewport()) {
-    const isOpen = document.body.classList.contains("filters-mobile-open");
-    elements.mobileFiltersToggle.setAttribute("aria-expanded", String(isOpen));
-    elements.mobileFiltersBackdrop.classList.toggle("hidden", !isOpen);
-    elements.filtersPanel.setAttribute("aria-hidden", isOpen ? "false" : "true");
-    return;
-  }
-
-  closeMobileFilters();
-  elements.filtersPanel.setAttribute("aria-hidden", "false");
-}
-
-function isMobileViewport() {
-  return window.innerWidth <= MOBILE_FILTER_BREAKPOINT;
+function scrollToFiltersPanel() {
+  elements.filtersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderTypeFilters() {
