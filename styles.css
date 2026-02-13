@@ -371,12 +371,6 @@ p {
   margin-bottom: 14px;
 }
 
-.panel-title-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .panel-title.stacked {
   display: block;
 }
@@ -386,9 +380,7 @@ p {
   color: var(--ink-soft);
 }
 
-.mobile-filters-toggle,
-.mobile-filters-backdrop,
-.mobile-filters-close {
+.mobile-filters-toggle {
   display: none;
 }
 
@@ -971,10 +963,6 @@ textarea {
   display: none !important;
 }
 
-body.filters-mobile-open {
-  overflow: hidden;
-}
-
 @keyframes card-in {
   from {
     opacity: 0;
@@ -1061,17 +1049,19 @@ body.filters-mobile-open {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 11px 14px;
-    border: 1px solid #8caddf;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #f7fbff, #eaf2ff);
-    color: #123f87;
+    width: fit-content;
+    padding: 11px 16px;
+    border: 1px solid #0f3f97;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #1b66df, #10449f);
+    color: #ffffff;
     font-weight: 700;
     letter-spacing: 0.01em;
-    box-shadow: 0 8px 20px rgba(18, 63, 135, 0.14);
+    box-shadow: 0 10px 22px rgba(15, 63, 151, 0.28);
     position: sticky;
     top: 8px;
     z-index: 40;
+    text-decoration: none;
   }
 
   .public-layout .catalog-panel {
@@ -1079,39 +1069,8 @@ body.filters-mobile-open {
   }
 
   .public-layout .filters-panel {
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    bottom: 0;
-    width: auto;
-    max-height: min(82vh, 680px);
-    margin: 0;
-    padding-bottom: calc(18px + env(safe-area-inset-bottom));
-    border-radius: 18px 18px 0 0;
-    transform: translateY(calc(100% + 20px));
-    transition: transform 0.24s ease;
-    overflow-y: auto;
-    z-index: 1110;
-    box-shadow: 0 -18px 40px rgba(18, 32, 57, 0.28);
-    pointer-events: none;
-  }
-
-  body.filters-mobile-open .public-layout .filters-panel {
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .public-layout .mobile-filters-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(11, 20, 34, 0.46);
-    backdrop-filter: blur(1px);
-    z-index: 1100;
-  }
-
-  .public-layout .mobile-filters-close {
-    display: inline-flex;
+    order: 3;
+    scroll-margin-top: 14px;
   }
 
   .lightbox-content {
@@ -1136,11 +1095,6 @@ body.filters-mobile-open {
 
   .property-grid {
     grid-template-columns: 1fr;
-  }
-
-  .public-layout .filters-panel {
-    left: 8px;
-    right: 8px;
   }
 
   .form-actions {
